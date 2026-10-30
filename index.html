@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMU Meal & Flex Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --cmu-red: #C41230;
+        }
+        .bg-cmu-red { background-color: var(--cmu-red); }
+        .text-cmu-red { color: var(--cmu-red); }
+        .border-cmu-red { border-color: var(--cmu-red); }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+    <div class="max-w-2xl mx-auto py-10 px-4">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">CMU Meal Tracker</h1>
+            <p class="text-gray-600">Budget your meal blocks and flex dollars for the semester</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Inputs Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="bg-cmu-red text-white p-1 rounded mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </span>
+                    Settings
+                </h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Current Meal Blocks</label>
+                        <input type="number" id="meals" value="200" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Current Flex Dollars ($)</label>
+                        <input type="number" id="flex" value="500" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Semester End Date</label>
+                        <input type="date" id="endDate" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Days Out of Town / Off Campus</label>
+                        <input type="number" id="daysOff" value="0" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Meals You Eat Per Day</label>
+                        <input type="number" id="dailyEat" value="2" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="bg-cmu-red text-white p-1 rounded mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </span>
+                    Analysis
+                </h2>
+
+                <div class="space-y-6 flex-grow">
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wider">Days Remaining</p>
+                        <p id="daysRem" class="text-3xl font-bold text-gray-900">--</p>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wider">Daily Meal Budget</p>
+                        <p id="mealBudget" class="text-3xl font-bold text-gray-900">--</p>
+                        <p id="mealAdvice" class="text-sm mt-1 text-gray-600"></p>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <p class="text-sm text-gray-500 uppercase font-bold tracking-wider">Daily Flex Budget</p>
+                        <p id="flexBudget" class="text-3xl font-bold text-gray-900">--</p>
+                    </div>
+                </div>
+
+                <div id="sellBox" class="mt-6 p-4 rounded-xl border-2 hidden transition-all">
+                    <p id="sellText" class="text-center font-bold"></p>
+                    <p id="sellWeekly" class="text-center text-sm mt-2 opacity-90"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set default end date to Dec 14
+        const today = new Date();
+        const defaultEnd = new Date(today.getFullYear(), 11, 14); // Dec 14
+        document.getElementById('endDate').value = defaultEnd.toISOString().split('T')[0];
+
+        function calculate() {
+            const meals = parseFloat(document.getElementById('meals').value) || 0;
+            const flex = parseFloat(document.getElementById('flex').value) || 0;
+            const endDateVal = document.getElementById('endDate').value;
+            const daysOff = parseFloat(document.getElementById('daysOff').value) || 0;
+            const dailyEat = parseFloat(document.getElementById('dailyEat').value) || 0;
+
+            if (!endDateVal) return;
+
+            const endDate = new Date(endDateVal);
+            const now = new Date();
+            now.setHours(0,0,0,0);
+
+            const diffTime = endDate - now;
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            // Subtract days off campus
+            diffDays = Math.max(1, diffDays - daysOff);
+
+            if (diffDays <= 0) {
+                document.getElementById('daysRem').innerText = "Semester Ended";
+                document.getElementById('mealBudget').innerText = "N/A";
+                document.getElementById('flexBudget').innerText = "N/A";
+                document.getElementById('sellBox').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('daysRem').innerText = diffDays;
+
+            const mealBudget = meals / diffDays;
+            document.getElementById('mealBudget').innerText = mealBudget.toFixed(2);
+
+            const flexBudget = flex / diffDays;
+            document.getElementById('flexBudget').innerText = `$${flexBudget.toFixed(2)}`;
+
+            const sellBox = document.getElementById('sellBox');
+            const sellText = document.getElementById('sellText');
+            const mealAdvice = document.getElementById('mealAdvice');
+
+            const surplus = mealBudget - dailyEat;
+
+            if (surplus > 0) {
+                sellBox.classList.remove('hidden');
+                sellBox.className = "mt-6 p-4 rounded-xl border-2 bg-green-50 border-green-200 text-green-800";
+                sellText.innerText = `You have a surplus! You can sell/give away ${surplus.toFixed(2)} meals per day.`;
+                document.getElementById('sellWeekly').innerText = `That's about ${ (surplus * 7).toFixed(1) } meals per week.`;
+                mealAdvice.innerText = "You're eating less than your budget.";
+                mealAdvice.className = "text-sm mt-1 text-green-600";
+            } else if (surplus < 0) {
+                sellBox.classList.remove('hidden');
+                sellBox.className = "mt-6 p-4 rounded-xl border-2 bg-red-50 border-red-200 text-red-800";
+                sellText.innerText = `Warning: You are over-eating by ${Math.abs(surplus).toFixed(2)} meals per day.`;
+                document.getElementById('sellWeekly').innerText = `You are over-budget by ${ Math.abs(surplus * 7).toFixed(1) } meals per week.`;
+                mealAdvice.innerText = "You'll run out before the end of the semester!";
+                mealAdvice.className = "text-sm mt-1 text-red-600";
+            } else {
+                sellBox.classList.add('hidden');
+                mealAdvice.innerText = "You are perfectly on budget.";
+                mealAdvice.className = "text-sm mt-1 text-gray-600";
+            }
+        }
+
+        // Listen for any input change
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        // Initial run
+        calculate();
+    </script>
+</body>
+</html>
