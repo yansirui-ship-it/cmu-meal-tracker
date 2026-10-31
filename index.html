@@ -152,7 +152,7 @@
             } else if (surplus < 0) {
                 sellBox.classList.remove('hidden');
                 sellBox.className = "mt-6 p-4 rounded-xl border-2 bg-red-50 border-red-200 text-red-800";
-                sellText.innerText = `Warning: You are over-eating by ${Math.abs(surplus).toFixed(2)} meals per day.`;
+                sellText.innerText = `Warning: You are eating over your budget by ${Math.abs(surplus).toFixed(2)} meals per day.`;
                 document.getElementById('sellWeekly').innerText = `You are over-budget by ${ Math.abs(surplus * 7).toFixed(1) } meals per week.`;
                 mealAdvice.innerText = "You'll run out before the end of the semester!";
                 mealAdvice.className = "text-sm mt-1 text-red-600";
