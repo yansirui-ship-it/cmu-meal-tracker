@@ -83,6 +83,10 @@
                         <p class="text-sm text-gray-500 uppercase font-bold tracking-wider">Daily Meal Budget</p>
                         <p id="mealBudget" class="text-3xl font-bold text-gray-900">--</p>
                         <p id="mealAdvice" class="text-sm mt-1 text-gray-600"></p>
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <p class="text-xs uppercase font-bold text-gray-500 tracking-wider">Blocks Depletion</p>
+                            <p id="mealRunOut" class="text-sm font-semibold mt-0.5 text-gray-900">--</p>
+                        </div>
                     </div>
 
                     <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
@@ -135,6 +139,7 @@
                 document.getElementById('daysRem').innerText = "Semester Ended";
                 document.getElementById('mealBudget').innerText = "N/A";
                 document.getElementById('flexBudget').innerText = "N/A";
+                document.getElementById('mealRunOut').innerText = "Semester has ended";
                 document.getElementById('flexRunOut').innerText = "Semester has ended";
                 document.getElementById('sellBox').classList.add('hidden');
                 return;
@@ -145,6 +150,25 @@
             // Meals Calculation
             const mealBudget = meals / diffDays;
             document.getElementById('mealBudget').innerText = mealBudget.toFixed(2);
+
+            // Meal Blocks Run-out Projection
+            const mealRunOut = document.getElementById('mealRunOut');
+
+            if (dailyEat <= 0) {
+                mealRunOut.innerHTML = `Blocks will not run out at 0 meals/day.`;
+            } else {
+                const mealDaysUntilEmpty = meals / dailyEat;
+                const mealRunOutDate = new Date(now);
+                mealRunOutDate.setDate(mealRunOutDate.getDate() + Math.floor(mealDaysUntilEmpty));
+                const mealDateFormatted = mealRunOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                if (mealDaysUntilEmpty < diffDays) {
+                    const daysLeft = Math.floor(mealDaysUntilEmpty);
+                    mealRunOut.innerHTML = `⚠️ Runs out on <span class="text-red-600 font-bold">${mealDateFormatted}</span> (~${daysLeft} days from now)`;
+                } else {
+                    mealRunOut.innerHTML = `✅ Lasts all semester! (Empties ~${mealDateFormatted})`;
+                }
+            }
 
             // Flex Calculation
             const flexBudget = flex / diffDays;
