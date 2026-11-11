@@ -53,7 +53,11 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Meals You Eat Per Day</label>
-                        <input type="number" id="dailyEat" value="2" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition">
+                        <input type="number" id="dailyEat" value="2" step="0.1" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Flex You Spend Per Day ($)</label>
+                        <input type="number" id="dailyFlex" value="8" step="0.5" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition">
                     </div>
                 </div>
             </div>
@@ -69,7 +73,7 @@
                     Analysis
                 </h2>
 
-                <div class="space-y-6 flex-grow">
+                <div class="space-y-5 flex-grow">
                     <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
                         <p class="text-sm text-gray-500 uppercase font-bold tracking-wider">Days Remaining</p>
                         <p id="daysRem" class="text-3xl font-bold text-gray-900">--</p>
@@ -84,12 +88,18 @@
                     <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
                         <p class="text-sm text-gray-500 uppercase font-bold tracking-wider">Daily Flex Budget</p>
                         <p id="flexBudget" class="text-3xl font-bold text-gray-900">--</p>
+                        <p id="flexAdvice" class="text-sm mt-1 text-gray-600"></p>
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <p class="text-xs uppercase font-bold text-gray-500 tracking-wider">Flex Depletion</p>
+                            <p id="flexRunOut" class="text-sm font-semibold mt-0.5 text-gray-900">--</p>
+                        </div>
                     </div>
                 </div>
 
                 <div id="sellBox" class="mt-6 p-4 rounded-xl border-2 hidden transition-all">
                     <p id="sellText" class="text-center font-bold"></p>
-                    <p id="sellWeekly" class="text-center text-sm mt-2 opacity-90"></p>
+                    <p id="sellWeekly" class="text-center text-sm mt-1 opacity-90"></p>
+                    <p id="sellFlexText" class="text-center text-sm mt-2 pt-2 border-t border-current/20 font-medium"></p>
                 </div>
             </div>
         </div>
@@ -107,59 +117,110 @@
             const endDateVal = document.getElementById('endDate').value;
             const daysOff = parseFloat(document.getElementById('daysOff').value) || 0;
             const dailyEat = parseFloat(document.getElementById('dailyEat').value) || 0;
+            const dailyFlex = parseFloat(document.getElementById('dailyFlex').value) || 0;
 
             if (!endDateVal) return;
 
-            const endDate = new Date(endDateVal);
+            // Safe date parsing avoiding timezone shifts
+            const [endY, endM, endD] = endDateVal.split('-').map(Number);
+            const endDate = new Date(endY, endM - 1, endD);
             const now = new Date();
             now.setHours(0,0,0,0);
 
             const diffTime = endDate - now;
-            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            let totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            let diffDays = Math.max(1, totalDays - daysOff);
 
-            // Subtract days off campus
-            diffDays = Math.max(1, diffDays - daysOff);
-
-            if (diffDays <= 0) {
+            if (totalDays <= 0) {
                 document.getElementById('daysRem').innerText = "Semester Ended";
                 document.getElementById('mealBudget').innerText = "N/A";
                 document.getElementById('flexBudget').innerText = "N/A";
+                document.getElementById('flexRunOut').innerText = "Semester has ended";
                 document.getElementById('sellBox').classList.add('hidden');
                 return;
             }
 
             document.getElementById('daysRem').innerText = diffDays;
 
+            // Meals Calculation
             const mealBudget = meals / diffDays;
             document.getElementById('mealBudget').innerText = mealBudget.toFixed(2);
 
+            // Flex Calculation
             const flexBudget = flex / diffDays;
             document.getElementById('flexBudget').innerText = `$${flexBudget.toFixed(2)}`;
 
+            // Flex Run-out Projection
+            const flexAdvice = document.getElementById('flexAdvice');
+            const flexRunOut = document.getElementById('flexRunOut');
+            let flexSurplus = 0;
+
+            if (dailyFlex <= 0) {
+                flexAdvice.innerText = "No daily spending entered ($0/day).";
+                flexAdvice.className = "text-sm mt-1 text-gray-500";
+                flexRunOut.innerHTML = `Flex will not run out at $0/day.`;
+                flexSurplus = flex;
+            } else {
+                const daysUntilEmpty = flex / dailyFlex;
+                const runOutDate = new Date(now);
+                runOutDate.setDate(runOutDate.getDate() + Math.floor(daysUntilEmpty));
+                const dateFormatted = runOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                flexSurplus = flex - (dailyFlex * diffDays);
+
+                if (daysUntilEmpty < diffDays) {
+                    const daysLeft = Math.floor(daysUntilEmpty);
+                    flexAdvice.innerText = `Spending $${(dailyFlex - flexBudget).toFixed(2)}/day over your $${flexBudget.toFixed(2)} budget.`;
+                    flexAdvice.className = "text-sm mt-1 text-red-600 font-medium";
+                    flexRunOut.innerHTML = `⚠️ Runs out on <span class="text-red-600 font-bold">${dateFormatted}</span> (~${daysLeft} days from now)`;
+                } else {
+                    flexAdvice.innerText = `Under budget! Extra $${flexSurplus.toFixed(2)} left at semester end.`;
+                    flexAdvice.className = "text-sm mt-1 text-green-600 font-medium";
+                    flexRunOut.innerHTML = `✅ Lasts all semester! (Empties ~${dateFormatted})`;
+                }
+            }
+
+            // Meals Advice & Surplus/Deficit
             const sellBox = document.getElementById('sellBox');
             const sellText = document.getElementById('sellText');
             const mealAdvice = document.getElementById('mealAdvice');
+            const sellFlexText = document.getElementById('sellFlexText');
 
-            const surplus = mealBudget - dailyEat;
+            const mealSurplus = mealBudget - dailyEat;
+            const totalMealSurplus = meals - (dailyEat * diffDays);
 
-            if (surplus > 0) {
+            if (mealSurplus > 0.05) {
                 sellBox.classList.remove('hidden');
                 sellBox.className = "mt-6 p-4 rounded-xl border-2 bg-green-50 border-green-200 text-green-800";
-                sellText.innerText = `You have a surplus! You can sell/give away ${surplus.toFixed(2)} meals per day.`;
-                document.getElementById('sellWeekly').innerText = `That's about ${ (surplus * 7).toFixed(1) } meals per week.`;
+                sellText.innerText = `Meal Surplus! You have ${Math.round(totalMealSurplus)} extra blocks to sell (~${mealSurplus.toFixed(2)}/day).`;
+                document.getElementById('sellWeekly').innerText = `That's about ${(mealSurplus * 7).toFixed(1)} meals per week.`;
                 mealAdvice.innerText = "You're eating less than your budget.";
                 mealAdvice.className = "text-sm mt-1 text-green-600";
-            } else if (surplus < 0) {
+            } else if (mealSurplus < -0.05) {
                 sellBox.classList.remove('hidden');
                 sellBox.className = "mt-6 p-4 rounded-xl border-2 bg-red-50 border-red-200 text-red-800";
-                sellText.innerText = `Warning: You are eating over your budget by ${Math.abs(surplus).toFixed(2)} meals per day.`;
-                document.getElementById('sellWeekly').innerText = `You are over-budget by ${ Math.abs(surplus * 7).toFixed(1) } meals per week.`;
-                mealAdvice.innerText = "You'll run out before the end of the semester!";
+                sellText.innerText = `Warning: Over meal budget by ${Math.abs(mealSurplus).toFixed(2)} meals per day.`;
+                document.getElementById('sellWeekly').innerText = `You are short by ${Math.abs(Math.round(totalMealSurplus))} meals total (~${Math.abs(mealSurplus * 7).toFixed(1)}/wk).`;
+                mealAdvice.innerText = "You'll run out of meals before the semester ends!";
                 mealAdvice.className = "text-sm mt-1 text-red-600";
             } else {
-                sellBox.classList.add('hidden');
-                mealAdvice.innerText = "You are perfectly on budget.";
+                mealAdvice.innerText = "You are perfectly on budget for meals.";
                 mealAdvice.className = "text-sm mt-1 text-gray-600";
+                sellBox.className = "mt-6 p-4 rounded-xl border-2 bg-gray-50 border-gray-200 text-gray-800";
+                sellText.innerText = "You are exactly on track for 0 meals.";
+                document.getElementById('sellWeekly').innerText = "";
+            }
+
+            // Display Flex Surplus in sellBox if available
+            if (flexSurplus > 1) {
+                sellBox.classList.remove('hidden');
+                sellFlexText.innerHTML = `💳 <strong>Flex Surplus:</strong> You have <strong>$${flexSurplus.toFixed(2)}</strong> extra flex to sell or splurge (~$${(flexSurplus / (diffDays / 7)).toFixed(2)}/wk).`;
+                sellFlexText.classList.remove('hidden');
+            } else if (flexSurplus < -1) {
+                sellFlexText.innerHTML = `💳 <strong>Flex Deficit:</strong> Short by <strong>$${Math.abs(flexSurplus).toFixed(2)}</strong>. Reduce daily spend to $${flexBudget.toFixed(2)}/day.`;
+                sellFlexText.classList.remove('hidden');
+            } else {
+                sellFlexText.classList.add('hidden');
             }
         }
 
